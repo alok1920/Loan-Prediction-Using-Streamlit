@@ -13,20 +13,20 @@ st.sidebar.header('User Input Parameter')
 
 def user_input_features():
     Married = st.sidebar.selectbox("Enter Marriage Status",('Yes','No'))
-    Credit_History = st.sidebar.selectbox("Credit History",('Yes','No'))
     Education = st.sidebar.selectbox("Education Qualification",('Graduate','Not Graduate'))
-    Property_Area = st.sidebar.selectbox("Property Area",('Rural','Semiurban','Urban'))
     ApplicantIncome = st.sidebar.number_input("Input Salary")
-    LoanAmount = st.sidebar.number_input("Input Loan Amount")
     CoapplicantIncome = st.sidebar.number_input("Co-Applicant Income")
+    LoanAmount = st.sidebar.number_input("Input Loan Amount")
+    Credit_History = st.sidebar.selectbox("Credit History",('Yes','No'))
+    Property_Area = st.sidebar.selectbox("Property Area",('Rural','Semiurban','Urban'))
     data = {
         'Married':Married,
-        'Credit_History':Credit_History,
         'Education':Education,
-        'Property_Area':Property_Area,
         'ApplicantIncome':ApplicantIncome,
-        'LoanAmount':LoanAmount,
         'CoapplicantIncome':CoapplicantIncome,
+        'LoanAmount':LoanAmount,
+        'Credit_History':Credit_History,
+        'Property_Area':Property_Area,
     }
     features = pd.DataFrame(data,index = [0])
     return features
@@ -79,12 +79,14 @@ y = train_imp.Loan_Status
 model = BaggingClassifier()
 model.fit(x,y)
 
+st.write(x.head())
+
 #prediction of model
 prediction = model.predict(test)
 prediction_proba = model.predict_proba(test)
 
 st.subheader('Prediction Results')
-st.write('Yes' if prediction_proba[0][1] > 0.5 else 'No')
+st.write('Yes' if prediction_proba[0][1] > 0.3 else 'No')
 
 st.subheader('Prediction Probablity')
 st.write(prediction_proba)
