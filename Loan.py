@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
-from sklearn.ensemble import AdaBoostClassifier
+import numpy as np
+from sklearn.ensemble import BaggingClassifier
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.ensemble import RandomForestRegressor
+
 
 st.title('Loan Prediction')
 
@@ -12,7 +14,7 @@ st.sidebar.header('User Input Parameter')
 def user_input_features():
     Married = st.sidebar.selectbox("Enter Marriage Status",('Yes','No'))
     Credit_History = st.sidebar.selectbox("Credit History",('Yes','No'))
-    Education = st.sidebar.selectbox("Education Qualification",('Yes','No'))
+    Education = st.sidebar.selectbox("Education Qualification",('Graduate','Not Graduate'))
     Property_Area = st.sidebar.selectbox("Property Area",('Rural','Semiurban','Urban'))
     ApplicantIncome = st.sidebar.number_input("Input Salary")
     LoanAmount = st.sidebar.number_input("Input Loan Amount")
@@ -36,7 +38,7 @@ st.write(test)
 #Encoding the test values in dataset
 test['Married'].replace({'Yes':1, 'No':0}, inplace=True)
 test['Credit_History'].replace({'Yes':1, 'No':0}, inplace=True)
-test['Education'].replace({'Yes':1, 'No':0}, inplace=True)
+test['Education'].replace({'Graduate':1, 'Not Graduate':0}, inplace=True)
 test['Property_Area'].replace({'Rural':0, 'Semiurban':1,'Urban':2}, inplace=True)
 st.write(test)
 
@@ -60,31 +62,29 @@ from sklearn.ensemble import  RandomForestClassifier
 train_imp[cat_null] = train_imp[cat_null].apply(lambda series: pd.Series(LabelEncoder().fit_transform(series[series.notnull()]),index=series[series.notnull()].index))
 imp_cat = IterativeImputer(estimator=RandomForestClassifier(),initial_strategy='most_frequent',max_iter=10, random_state=0)
 train_imp[cat_null] = imp_cat.fit_transform(train_imp[cat_null])
-st.write(train_imp.head())
 
+#Handeling Outliers
+for x in ['ApplicantIncome','CoapplicantIncome','LoanAmount']:
+    q75,q25 = np.percentile(train_imp.loc[:,x],[75,25])
+    intr_qr = q75-q25
+    max = q75+(1.5*intr_qr)
+    min = q25-(1.5*intr_qr)
+    train_imp.loc[train_imp[x] < min,x] = min
+    train_imp.loc[train_imp[x] > max,x] = max
 
-'''
-#Adding calculated values
-st.subheader('Calculation For Loan Approvel')
-
-#dropping not required columns and NA values
-train = pd.read_csv('train.csv')
-train.drop(['Gender','Loan_ID','Married','Dependents','Education','Self_Employed','Property_Area'],inplace=True,axis=1)
-train = train.dropna()
 
 #model building
-x = train.drop('Loan_Status',1)
-y = train.Loan_Status
-model = AdaBoostClassifier()
+x = train_imp.drop('Loan_Status',1)
+y = train_imp.Loan_Status
+model = BaggingClassifier()
 model.fit(x,y)
 
 #prediction of model
-prediction = model.predict(df)
-prediction_proba = model.predict_proba(df)
+prediction = model.predict(test)
+prediction_proba = model.predict_proba(test)
 
 st.subheader('Prediction Results')
-st.write('Yes' if prediction_proba[0][1] > 0.4 else 'No')
+st.write('Yes' if prediction_proba[0][1] > 0.5 else 'No')
 
 st.subheader('Prediction Probablity')
 st.write(prediction_proba)
-'''
